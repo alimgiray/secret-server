@@ -5,30 +5,59 @@
       <router-link to="/">Create</router-link> |
       <router-link to="/retrieve">Retrieve</router-link>
     </div>
+
+    <button v-on:click="changeResponseType">Change to: {{ responseType }}</button>
     
     <router-view/>
 
   </div>
 </template>
 
+<script>
+export default {
+  data() {
+    return {
+      responseType: 'xml',
+    }
+  },
+  methods: {
+    changeResponseType() {
+      this.$http.get('responseType/'+ this.responseType).then(response => {
+        if(this.responseType === 'xml') {
+          this.responseType = 'json'
+        } else {
+          this.responseType = 'xml'
+        }
+      }, error => {
+        console.log(error)
+      });
+    }
+  }
+}
+</script>
+
 <style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-#nav {
-  padding: 30px;
-}
+  button {
+    margin-bottom: 20px;
+  }
 
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
+  #app {
+    font-family: 'Avenir', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+    color: #2c3e50;
+  }
+  #nav {
+    padding: 30px;
+  }
 
-#nav a.router-link-exact-active {
-  color: #42b983;
-}
+  #nav a {
+    font-weight: bold;
+    color: #2c3e50;
+  }
+
+  #nav a.router-link-exact-active {
+    color: #42b983;
+  }
 </style>

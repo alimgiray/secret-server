@@ -7,7 +7,7 @@ import (
 )
 
 type Secret struct {
-	ID bson.ObjectId `bson:"_id" json:"-"`
+	ID bson.ObjectId `bson:"_id" json:"-" xml:"-"`
 	Hash string `bson:"hash" json:"hash"`
 	SecretText string `bson:"secretText" json:"secretText"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

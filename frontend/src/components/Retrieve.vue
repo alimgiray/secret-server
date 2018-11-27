@@ -4,7 +4,7 @@
       <input type="text" placeholder="Hash" v-model="hash" required>
       <button type="submit">Get</button>
     </form>
-    <pre>{{ jsonstr | pretty }}</pre>
+    <pre>{{ responseStr }}</pre>
   </div>
 </template>
 
@@ -13,23 +13,17 @@ export default {
   data() {
     return {
       hash: '',
-      jsonstr: '{}'
+      responseStr: ''
     }
   },
   methods: {
     getSecret() {
-      this.jsonstr = '{}'
+      this.jsonstr = ''
       this.$http.get('secret/'+ this.hash).then(response => {
-        console.log(response);
-        this.jsonstr = response.bodyText;
+        this.responseStr = response.bodyText
       }, error => {
-        this.jsonstr = '{"error": "' + error.statusText + '"}'
+        this.responseStr = error.statusText
       });
-    }
-  },
-  filters: {
-    pretty: function(value) {
-      return JSON.stringify(JSON.parse(value), null, 2);
     }
   }
 }

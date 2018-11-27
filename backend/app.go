@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 	"encoding/json"
+	"encoding/xml"
+	"io/ioutil"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -15,12 +17,30 @@ import (
 	. "./secret"
 )
 
+type response interface {
+	encode(w http.ResponseWriter, s Secret)
+}
+
+type jsonResponse struct {}
+type xmlResponse struct {}
+
+func (r jsonResponse) encode (w http.ResponseWriter, s Secret) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s)
+}
+
+func (r xmlResponse) encode (w http.ResponseWriter, s Secret) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/xml")
+ 	xml.NewEncoder(w).Encode(s)
+}
+
 var mongo = db.Database{}
+var responseType response
 
 func CreateSecret(w http.ResponseWriter, r *http.Request) {
 	
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	r.ParseForm()
 	var secretText = r.Form["secret"][0]
 	var expireAfterViews = r.Form["expireAfterViews"][0]
@@ -59,14 +79,10 @@ func CreateSecret(w http.ResponseWriter, r *http.Request) {
 
 	mongo.Insert(secret)
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(secret)
+	responseType.encode(w, secret)
 }
 
 func RetrieveSecret(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	vars := mux.Vars(r)
     hash := vars["hash"]
@@ -91,9 +107,21 @@ func RetrieveSecret(w http.ResponseWriter, r *http.Request) {
     secret.RemainingViews = secret.RemainingViews - 1
     mongo.Update(secret)
 
+	responseType.encode(w, secret)
+}
+
+func ChangeResponseType(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+    respType := vars["type"]
+
+    if respType == "xml" {
+    	responseType = xmlResponse{}
+    } else {
+		responseType = jsonResponse{}
+    }
+
     w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(secret)
 }
 
 func empty(s string) bool {
@@ -101,7 +129,28 @@ func empty(s string) bool {
 }
 
 func init() {
+	readConfig()
+	setupDatabase()
+}
 
+func readConfig() {
+
+	f, err := ioutil.ReadFile("config")
+    if err != nil {
+        log.Println(err)
+    }
+
+    configStr := string(f)
+
+    if configStr == "xml" {
+    	responseType = xmlResponse{}
+    } else {
+		responseType = jsonResponse{}
+    }
+
+}
+
+func setupDatabase() {
 	mongo.Server = ""
 	mongo.Database = "codersrank"
 	mongo.Connect()
@@ -111,6 +160,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/v1/secret", CreateSecret).Methods("POST", "OPTIONS")
 	r.HandleFunc("/v1/secret/{hash}", RetrieveSecret).Methods("GET", "OPTIONS")
+	r.HandleFunc("/v1/responseType/{type}", ChangeResponseType).Methods("GET", "OPTIONS")
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	if err := http.ListenAndServe(":3000", r); err != nil {

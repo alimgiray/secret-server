@@ -6,7 +6,7 @@
       <input type="number" placeholder="Expire time (in minutes)" v-model="expire" required>
       <button type="submit">Create</button>
     </form>
-    <pre>{{ jsonstr | pretty }}</pre>
+    <pre>{{ responseStr }}</pre>
   </div>
 </template>
 
@@ -17,27 +17,22 @@ export default {
       secret: '',
       count: '',
       expire: '',
-      jsonstr: '{}'
+      responseStr: ''
     }
   },
   methods: {
     createSecret() {
-      this.jsonstr = '{}'
+      this.jsonstr = ''
       let data = {}
       data["secret"] = this.secret
       data["expireAfterViews"] = this.count
       data["expireAfter"] = this.expire
       this.$http.post('secret', data, {emulateJSON: true})
       .then(response => {
-        this.jsonstr = response.bodyText
+        this.responseStr = response.bodyText
       }, error => {
-        this.jsonstr = '{"error": "' + error.statusText + '"}'
+        this.responseStr = error.statusText
       });
-    }
-  },
-  filters: {
-    pretty: function(value) {
-      return JSON.stringify(JSON.parse(value), null, 2);
     }
   }
 }
@@ -49,8 +44,5 @@ export default {
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 20px;
-  }
-  button {
-    
   }
 </style>
